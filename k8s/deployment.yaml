@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{SERVICE_NAME}}
+  namespace: {{NAMESPACE}}
+  labels:
+    app: {{SERVICE_NAME}}
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{SERVICE_NAME}}
+  template:
+    metadata:
+      labels:
+        app: {{SERVICE_NAME}}
+        version: v1
+    spec:
+      imagePullSecrets:
+      - name: jfrog-registry
+      containers:
+      - name: {{SERVICE_NAME}}
+        image: {{REGISTRY_PATH}}/{{SERVICE_NAME}}:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: {{SERVICE_PORT}}
+          name: http
+        env:
+        # Azure AD Configuration
+        - name: CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{SERVICE_NAME}}-secrets
+              key: client-id
+        - name: CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{SERVICE_NAME}}-secrets
+              key: client-secret
+        - name: TENANT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: tenant-id
+        
+        # Database Configuration
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: postgres-host
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: postgres-port
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: postgres-db
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{SERVICE_NAME}}-secrets
+              key: postgres-password
+        
+        # Service Configuration
+        - name: MCP_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{SERVICE_NAME}}-config
+              key: service-port
+        - name: MCP_SERVER_HOST
+          value: "0.0.0.0"
+        - name: REDIRECT_URI
+          value: "https://{{INGRESS_HOST}}/auth/callback"
+        - name: BASE_URL
+          value: "https://{{INGRESS_HOST}}"
+        
+        # Proxy Configuration
+        - name: http_proxy
+          value: "http://proxy-se.ddc.teliasonera.net:8080"
+        - name: https_proxy
+          value: "http://proxy-se.ddc.teliasonera.net:8080"
+        - name: no_proxy
+          value: "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.teliasonera.net,.telia.net,.telia.io,.teliacompany.io,.teliacompany.net,.teliacompany.com,.telia.se,.estpak.ee"
+        
+        # Resource Limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Security Context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      
+      # Pod Security Context
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
