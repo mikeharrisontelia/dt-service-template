@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{SERVICE_NAME}}-config
+  namespace: {{NAMESPACE}}
+data:
+  # Azure AD Configuration
+  tenant-id: "05764a73-8c6f-4538-83cd-413f1e1b5665"  # Update if different tenant
+  client-id: "UPDATE_WITH_YOUR_CLIENT_ID"  # Replace with your Azure AD app client ID
+  
+  # Database Configuration - Update as needed
+  postgres-host: "your-postgres-host.ddc.teliasonera.net"
+  postgres-port: "5432"
+  postgres-db: "your_database"
+  postgres-user: "your_user"
+  
+  # Service Configuration
+  service-port: "{{SERVICE_PORT}}"
+  log-level: "INFO"
+  
+  # Application-specific config
+  # Add your custom configuration here
